@@ -1,3 +1,3 @@
-drop table catalog.loans;
+drop table catalog.lendings;
 --;;
-drop table catalog.copies;
+drop table catalog.items;

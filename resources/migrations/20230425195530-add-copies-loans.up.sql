@@ -1,13 +1,13 @@
-create table catalog.copies (
-  copy_id bigint generated always as identity primary key,
+create table catalog.items (
+  item_id bigint generated always as identity primary key,
   book_id bigint not null references catalog.book(book_id),
-  status varchar(32) not null default 'available'
+  status boolean not null
 );
 --;;
-create table catalog.loans (
-  loan_id bigint generated always as identity primary key,
-  copy_id bigint not null references catalog.copies(copy_id),
+create table catalog.lendings (
+  lending_id bigint generated always as identity primary key,
+  copy_id bigint not null references catalog.items(item_id),
   user_id bigint not null,
-  loan_date date not null,
+  lending_date date not null,
   due_date date not null
 );
