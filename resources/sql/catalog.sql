@@ -48,14 +48,9 @@ and due_date >= now();
 
 -- :name get-book-availability :? :1
 select count(*) from catalog.items 
-where book_id = :book_id
+where book_id = (select book_id from catalog.book where isbn = :isbn)
 and available = true
 
 -- :name insert-item! :! :1
 insert into catalog.items (book_id, available) values (:book_id, true)
 returning *;
-
--- :name get-book-id-by-isbn :? :1
-select book_id
-from catalog.book
-where isbn = :isbn;
