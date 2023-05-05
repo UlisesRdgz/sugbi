@@ -1,7 +1,16 @@
 (ns sugbi.catalog.routes
   (:require
+   [clojure.spec.alpha :as s]
+   [reitit.ring.middleware.multipart :as multipart]
    [spec-tools.data-spec :as ds]
-   [sugbi.catalog.handlers :as catalog.handlers]))
+   [sugbi.catalog.handlers :as catalog.handlers])
+  (:import java.io.BufferedInputStream
+           java.time.LocalDate))
+
+
+(defn date?
+  [o]
+  (instance? java.time.LocalDate o))
 
 
 (def basic-book-info-spec
@@ -11,7 +20,7 @@
 
 (def book-info-spec
   {:isbn                         string?
-   :available                    boolean?
+   :available                    int?
    (ds/opt :title)               string?
    (ds/opt :full-title)          string?
    (ds/opt :subtitle)            string?
@@ -22,6 +31,13 @@
    (ds/opt :genre)               string?
    (ds/opt :subjects)            [string?]
    (ds/opt :number-of-pages)     int?})
+
+
+(def loan-spec
+  {:loan-id     int?
+   :loan-period [date?] ;; Un vector de fechas
+   :return-date date?   ;; Una fecha
+   })
 
 
 (def routes
@@ -37,7 +53,8 @@
                 :responses  {200 {:body basic-book-info-spec}
                              405 {:body {:message string?}}}
                 :handler    catalog.handlers/insert-book!}}]
-    ["/:isbn" {:get    {:summary    "get a book info by its isbn"
+    ["/:isbn" 
+     ["" {:get    {:summary    "get a book info by its isbn"
                         :parameters {:path {:isbn string?}}
                         :responses  {200 {:body book-info-spec}
                                      404 {:body {:isbn string?}}}
@@ -47,4 +64,21 @@
                                      :path   {:isbn string?}}
                         :responses  {200 {:body {:deleted int?}}
                                      405 {:body {:message string?}}}
-                        :handler    catalog.handlers/delete-book!}}]]])
+                        :handler    catalog.handlers/delete-book!}}]
+     ["/item"
+      ["/:book-item-id"
+       ["/checkout" {:post {:summary    "request a lending with the book item id."
+                            :parameters {:path {:isbn string?
+                                                :book-item-id int?}}
+                            :responses  {200 {:body loan-spec}
+                                         404 {:body {:isbn string?}}
+                                         409 {:body {:book-item-id int?}}
+                                         403 {:body {:message string?}}}
+                            :handler    catalog.handlers/checkout-book!}}]
+       ["/return" {:post {:summary    "returns a lending with the book item id."
+                          :parameters {:path {:isbn string?
+                                              :book-item-id int?}}
+                          :responses  {200 {:body {:returned int?}}
+                                       404 {:body {:isbn int?}}
+                                       403 {:body {:message string?}}}
+                          :handler    catalog.handlers/return-book!}}]]]]]])

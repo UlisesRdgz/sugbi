@@ -7,7 +7,7 @@ create table catalog.items (
 create table catalog.lendings (
   lending_id bigint generated always as identity primary key,
   copy_id bigint not null references catalog.items(item_id),
-  user_id bigint not null,
+  user_id text not null,
   lending_date date not null,
   due_date date not null
 );

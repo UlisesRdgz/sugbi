@@ -11,7 +11,7 @@ from catalog.book
 where lower(title) like :title;
 
 -- :name get-book :? :1
-select isbn, true as "available"
+select book_id, isbn, true as "available"
 from catalog.book
 where isbn = :isbn
 
@@ -19,7 +19,7 @@ where isbn = :isbn
 select isbn, true as "available"
 from catalog.book;
 
--- :name checkout-book :! :1
+-- :name checkout-book! :! :1
 with lending as (
     insert into catalog.lendings (copy_id, user_id, lending_date, due_date)
     values (:book_item_id, :user_id, now(), now() + interval '14 days')
@@ -29,7 +29,7 @@ update catalog.items
 set available = false
 where item_id = :book_item_id;
 
--- :name return-book :! :n
+-- :name return-book! :! :n
 with return_book as (
     update catalog.lendings
     set due_date = now()
@@ -54,3 +54,9 @@ and available = true
 -- :name insert-item! :! :1
 insert into catalog.items (book_id, available) values (:book_id, true)
 returning *;
+
+-- :name get-item-availability :? :1
+select available from catalog.items where item_id = :book_item_id;
+
+-- :name get-book-id-from-item-id :? :1
+select book_id from catalog.items where item_id = :book_item_id;

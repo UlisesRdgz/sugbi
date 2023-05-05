@@ -2,7 +2,8 @@
   (:require
    [ring.util.http-response :as response]
    [sugbi.catalog.db :as catalog.db]
-   [sugbi.catalog.core :as catalog.core]))
+   [sugbi.catalog.core :as catalog.core]
+   [sugbi.auth.google.handlers :as google.handlers]))
 
 
 (defn search-books
@@ -46,3 +47,27 @@
                         catalog.core/available-fields)]
       (response/ok book-info)
       (response/not-found {:isbn isbn}))))
+
+
+(defn checkout-book!
+  [request]
+  (let [isbn         (get-in request [:parameters :path :isbn])
+        book-item-id (get-in request [:parameters :path :book-item-id])
+        user         (get-in google.handlers/callback-data [:user-info :sub])]
+    (if user
+      (if (catalog.core/checkout-book isbn book-item-id user)
+        (response/ok {:status 200 :message "Book checked out successfully"})
+        (response/status 409 {:message "Book is already checked out"}))
+      (response/forbidden {:message "You need an active session to perform this action"}))))
+
+
+(defn return-book!
+  [request]
+  (let [isbn         (get-in request [:parameters :path :isbn])
+        book-item-id (get-in request [:parameters :path :book-item-id])
+        user         (get-in request [:session :user])]
+    (if user
+      (if (catalog.db/return-book! isbn book-item-id user)
+        (response/ok {:status 200 :message "Book returned successfully"})
+        (response/not-found {:message "Book not found"}))
+      (response/forbidden {:message "You need an active session to perform this action"}))))
