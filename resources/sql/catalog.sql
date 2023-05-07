@@ -60,3 +60,9 @@ select available from catalog.items where item_id = :book_item_id;
 
 -- :name get-book-id-from-item-id :? :1
 select book_id from catalog.items where item_id = :book_item_id;
+
+-- :name get-loan :? :*
+select lending_id, lending_date, due_date from catalog.lendings
+where user_id = :user_id
+and copy_id = :copy_id
+and due_date >= now();

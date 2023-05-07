@@ -33,9 +33,9 @@
         isbns (map :isbn db-books)
         open-library-book-infos (olb/multiple-book-info isbns fields)]
     (->> (merge-on-key :isbn db-books open-library-book-infos)
-         (map (fn [book]
-                (let [availability (db/get-book-availability {:isbn (:isbn book)})]
-                  (assoc book :available (:count availability))))))))
+         (mapv (fn [book]
+                 (let [availability (db/get-book-availability {:isbn (:isbn book)})]
+                   (assoc book :available (:count availability))))))))
 
 
 (defn enriched-search-books-by-title
@@ -44,17 +44,13 @@
         isbns (map :isbn db-book-infos)
         open-library-book-infos (olb/multiple-book-info isbns fields)]
     (->> (merge-on-key :isbn db-book-infos open-library-book-infos)
-         (map (fn [book]
+         (mapv (fn [book]
                 (let [availability (db/get-book-availability {:isbn (:isbn book)})]
                   (assoc book :available (:count availability))))))))
 
 
 (defn checkout-book
-  [isbn book_item_id user_id]
+  [isbn book_item_id]
   (let [book (db/get-book {:isbn isbn})
-        book_id_from_item (db/get-book-id-from-item-id {:book_item_id book_item_id})
-        item-availability (db/get-item-availability {:book_item_id book_item_id})]
-    (when (and (:available item-availability)
-               (= (:book_id book) (:book_id book_id_from_item)))
-      (db/checkout-book! {:book_item_id book_item_id
-                          :user_id user_id}))))
+        book_id_from_item (db/get-book-id-from-item-id {:book_item_id book_item_id})]
+    (when (= (:book_id book) (:book_id book_id_from_item)) true)))

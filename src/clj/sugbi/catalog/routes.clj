@@ -34,51 +34,64 @@
 
 
 (def loan-spec
-  {:loan-id     int?
-   :loan-period [date?] ;; Un vector de fechas
-   :return-date date?   ;; Una fecha
+  {:lending_id     int?
+   :lending_date   date? ;; Un vector de fechas
+   :due_date       date?   ;; Una fecha
    })
 
 
-(def routes
-  ["/catalog" {:swagger {:tags ["Catalog"]}}
-   ["/books"
-    ["" {:get  {:summary    "gets the catalog. Optionally, accepts a search criteria"
-                :parameters {:query {(ds/opt :q) string?}}
-                :responses  {200 {:body [book-info-spec]}}
-                :handler    catalog.handlers/search-books}
-         :post {:summary    "add a book title to the catalog"
-                :parameters {:header {:cookie string?}
-                             :body   basic-book-info-spec}
-                :responses  {200 {:body basic-book-info-spec}
-                             405 {:body {:message string?}}}
-                :handler    catalog.handlers/insert-book!}}]
-    ["/:isbn" 
-     ["" {:get    {:summary    "get a book info by its isbn"
-                        :parameters {:path {:isbn string?}}
-                        :responses  {200 {:body book-info-spec}
-                                     404 {:body {:isbn string?}}}
-                        :handler    catalog.handlers/get-book}
-               :delete {:summary    "delete a book title of the catalog"
-                        :parameters {:header {:cookie string?}
-                                     :path   {:isbn string?}}
-                        :responses  {200 {:body {:deleted int?}}
-                                     405 {:body {:message string?}}}
-                        :handler    catalog.handlers/delete-book!}}]
-     ["/item"
-      ["/:book-item-id"
-       ["/checkout" {:post {:summary    "request a lending with the book item id."
-                            :parameters {:path {:isbn string?
-                                                :book-item-id int?}}
-                            :responses  {200 {:body loan-spec}
-                                         404 {:body {:isbn string?}}
-                                         409 {:body {:book-item-id int?}}
-                                         403 {:body {:message string?}}}
-                            :handler    catalog.handlers/checkout-book!}}]
-       ["/return" {:post {:summary    "returns a lending with the book item id."
-                          :parameters {:path {:isbn string?
-                                              :book-item-id int?}}
-                          :responses  {200 {:body {:returned int?}}
-                                       404 {:body {:isbn int?}}
-                                       403 {:body {:message string?}}}
-                          :handler    catalog.handlers/return-book!}}]]]]]])
+(def routes 
+  [""
+   ["/catalog" {:swagger {:tags ["Catalog"]}}
+    ["/books"
+     ["" {:get  {:summary    "gets the catalog. Optionally, accepts a search criteria"
+                 :parameters {:query {(ds/opt :q) string?}}
+                 :responses  {200 {:body [book-info-spec]}}
+                 :handler    catalog.handlers/search-books}
+          :post {:summary    "add a book title to the catalog"
+                 :parameters {:header {:cookie string?}
+                              :body   basic-book-info-spec}
+                 :responses  {200 {:body basic-book-info-spec}
+                              405 {:body {:message string?}}}
+                 :handler    catalog.handlers/insert-book!}}]
+     ["/:isbn"
+      ["" {:get    {:summary    "get a book info by its isbn"
+                    :parameters {:path {:isbn string?}}
+                    :responses  {200 {:body book-info-spec}
+                                 404 {:body {:isbn string?}}}
+                    :handler    catalog.handlers/get-book}
+           :delete {:summary    "delete a book title of the catalog"
+                    :parameters {:header {:cookie string?}
+                                 :path   {:isbn string?}}
+                    :responses  {200 {:body {:deleted int?}}
+                                 405 {:body {:message string?}}}
+                    :handler    catalog.handlers/delete-book!}}]
+      ["/item"
+       ["/:book-item-id"
+        ["/checkout" {:post {:summary    "request a lending with the book item id."
+                             :parameters {:path {:isbn string?
+                                                 :book-item-id int?}}
+                             :responses  {200 {:body loan-spec}
+                                          404 {:body {:message string?}}
+                                          409 {:body {:message string?}}
+                                          403 {:body {:message string?}}}
+                             :handler    catalog.handlers/checkout-book!}}]
+        ["/return" {:post {:summary    "returns a lending with the book item id."
+                           :parameters {:path {:isbn string?
+                                               :book-item-id int?}}
+                           :responses  {200 {:body {:returned int?}}
+                                        404 {:body {:message string?}}
+                                        403 {:body {:message string?}}}
+                           :handler    catalog.handlers/return-book!}}]]]]]]
+   ["/user" {:swagger {:tags ["User"]}}
+    ["/lendings" {:get  {:summary    "gets the lendings of the actual user."
+                         :responses  {200 {:body [loan-spec]}
+                                      403 {:body {:message string?}}}
+                         :handler    catalog.handlers/search-lendings}}]]
+   ["/lendings?user-id=:user-id" {:swagger {:tags ["Librarian"]}
+             :get  {:summary    "gets the lendings of the user by their user-id."
+                    :parameters {:query {:user-id string?}}
+                    :responses  {200 {:body [loan-spec]}
+                                 404 {:body {:message string?}}
+                                 403 {:body {:message string?}}}
+                    :handler    catalog.handlers/search-lendings-user-id}}]])
