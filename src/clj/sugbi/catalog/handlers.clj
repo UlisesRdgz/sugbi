@@ -57,9 +57,8 @@
     (if user
       (if (catalog.core/checkout-book isbn book-item-id)
         (if (empty? (catalog.db/get-loan {:user_id user :copy_id book-item-id}))
-          (response/ok
-           (select-keys (catalog.db/checkout-book! {:user_id user :book_item_id book-item-id})
-                        [:lending_id :lending_date :due_date]))
+          (do (catalog.db/checkout-book! {:user_id user :book_item_id book-item-id})
+              (response/ok {:message "The loan was successfully processed"}))
           (response/conflict {:message "Book is already checked out"}))
         (response/not-found {:message "Book does not match the provided ISBN or book-item-id"}))
       (response/forbidden {:message "You need an active session to perform this action"}))))
@@ -74,14 +73,12 @@
       (if (catalog.core/checkout-book isbn book-item-id)
         (if (empty? (catalog.db/get-loan {:user_id user :copy_id book-item-id}))
           (response/forbidden {:message "The book is not currently checked out to the user"})
-          (response/ok
-           (select-keys (catalog.db/return-book! {:user_id user :book_item_id book-item-id})
-                        [:lending_id :lending_date :due_date])))
+          (response/ok {:returned (catalog.db/return-book! {:user_id user :book_item_id book-item-id})}))
         (response/not-found {:message "Book does not match the provided ISBN or book-item-id"}))
       (response/forbidden {:message "You need an active session to perform this action"}))))
 
 
-(defn search-lendings
+(defn search-lendings 
   [request]
   (let [user         (get-in google.handlers/callback-data [:user-info :sub])]
     (if user
@@ -92,7 +89,7 @@
 
 (defn search-lendings-user-id
   [request]
-  (let [user-id          (get-in request [:parameters :path :user-id])
+  (let [user-id          (get-in request [:parameters :query :user-id])
         is-librarian?    (get-in request [:session :is-librarian?])]
     (if is-librarian?
       (if (empty? (catalog.db/get-book-lendings {:user_id user-id}))
@@ -100,7 +97,3 @@
         (response/ok
          (catalog.db/get-book-lendings {:user_id user-id})))
       (response/forbidden {:message "Operation restricted to librarians"}))))
-
-;; (not (nil? (catalog.db/get-loan {:user_id "115924144694284890141" :copy_id 1})))
-;; (empty? (catalog.db/get-loan {:user_id "115924144694284890141" :copy_id 11}))
-;; (catalog.db/get-loan {:user_id "115924144694284890141" :copy_id 1})

@@ -3,7 +3,8 @@
    [clojure.spec.alpha :as s]
    [reitit.ring.middleware.multipart :as multipart]
    [spec-tools.data-spec :as ds]
-   [sugbi.catalog.handlers :as catalog.handlers])
+   [sugbi.catalog.handlers :as catalog.handlers]
+   [clojure.string :as string])
   (:import java.io.BufferedInputStream
            java.time.LocalDate))
 
@@ -35,9 +36,10 @@
 
 (def loan-spec
   {:lending_id     int?
-   :lending_date   date? ;; Un vector de fechas
-   :due_date       date?   ;; Una fecha
-   })
+   :copy_id        int?
+   :user_id        string?
+   :lending_date   date?
+   :due_date       date?})
 
 
 (def routes 
@@ -71,7 +73,7 @@
         ["/checkout" {:post {:summary    "request a lending with the book item id."
                              :parameters {:path {:isbn string?
                                                  :book-item-id int?}}
-                             :responses  {200 {:body loan-spec}
+                             :responses  {200 {:body {:message string?}}
                                           404 {:body {:message string?}}
                                           409 {:body {:message string?}}
                                           403 {:body {:message string?}}}
@@ -83,15 +85,16 @@
                                         404 {:body {:message string?}}
                                         403 {:body {:message string?}}}
                            :handler    catalog.handlers/return-book!}}]]]]]]
-   ["/user" {:swagger {:tags ["User"]}}
-    ["/lendings" {:get  {:summary    "gets the lendings of the actual user."
+   ["" {:swagger {:tags ["Lendings"]}}
+    ["/user" 
+     ["/lendings" {:get  {:summary    "gets the lendings of the actual user."
+                          :responses  {200 {:body [loan-spec]}
+                                       403 {:body {:message string?}}}
+                          :handler    catalog.handlers/search-lendings}}]]
+    ["/lendings" {:get  {:summary    "gets the lendings of the user by their user-id."
+                         :parameters {:header {:cookie string?}
+                                      :query {:user-id string?}}
                          :responses  {200 {:body [loan-spec]}
+                                      404 {:body {:message string?}}
                                       403 {:body {:message string?}}}
-                         :handler    catalog.handlers/search-lendings}}]]
-   ["/lendings?user-id=:user-id" {:swagger {:tags ["Librarian"]}
-             :get  {:summary    "gets the lendings of the user by their user-id."
-                    :parameters {:query {:user-id string?}}
-                    :responses  {200 {:body [loan-spec]}
-                                 404 {:body {:message string?}}
-                                 403 {:body {:message string?}}}
-                    :handler    catalog.handlers/search-lendings-user-id}}]])
+                         :handler    catalog.handlers/search-lendings-user-id}}]]])
